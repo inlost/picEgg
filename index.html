@@ -1,0 +1,94 @@
+<!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+	<meta charset="UTF-8">
+    <title>图片彩蛋-Demo</title>
+    <script type='text/javascript' src='http://www.ai0932.com/Script/jquery-1.8.2.min.js'></script>
+	<style>
+		#picHolder{display:none;}
+		#firstCircle{border-radius:256px;}
+		#picShowHolder div{position:absolute;}
+		#firstCircle,#picShowHolder,#picHolder{width:512px;height:512px;position:relative;}
+	</style>
+</head>
+<body>
+    <canvas id="picHolder"></canvas>
+    <div id="picShowHolder"><div id="firstCircle"></div></div>
+    <script type="text/javascript">
+	var PicShow=function(initData){
+		var theCanvas,
+			theContext,
+			imgData;
+		var img=new Image();
+		img.src=initData.imgSrc;
+		this.init=function(){
+			img.onload=function(){
+				theCanvas=document.getElementById(initData.picHolder);
+				theCanvas.height=512;
+				theCanvas.width=512;
+				theContext=theCanvas.getContext("2d");
+				theContext.drawImage(this,0,0);
+				imgData=theContext.getImageData(0,0,512,512).data;
+				
+				var color=getColor(imgData);
+				setColor($("#firstCircle"),color);
+				
+				initData.callBack();
+			};		
+		};
+		function setColor(elm,color){
+            var style=elm.attr("style")?elm.attr("style")+"background:rgb("+color[0]+","+color[1]+","+color[2]+");":
+				"background:rgb("+color[0]+","+color[1]+","+color[2]+");";
+            elm.attr("style",style).on("hover",setListen).removeClass("newDiv");
+        }
+		function getColor(pixelsData){
+            var color=[0,0,0,0];
+            for(var i=0;i<pixelsData.length;i++){
+                var arrayIndexNow=(i+1)%4==0?3:((i+1)%4-1);
+                color[arrayIndexNow]=color[arrayIndexNow]+pixelsData[i];
+            }
+            for(var i in color){color[i]=parseInt(color[i]/(pixelsData.length/4));}
+            return color;
+        }
+		function setListen(elm){
+			var hoverElm,size,offset;
+			var style=new Array();
+			hoverElm=$(this);
+			size=hoverElm.height()/2;
+			if(size<8){hoverElm.off("hover");return;}
+			offset=hoverElm.position();
+			style[0]="height:"+size+"px;width:"+size+"px;border-radius:"+size/2+"px;"
+			style[1]="left:"+offset.left+"px;top:"+offset.top+"px;";
+			style[2]="left:"+(offset.left+size)+"px;top:"+offset.top+"px;";
+			style[3]="left:"+offset.left+"px;top:"+(offset.top+size)+"px;";
+			style[4]="left:"+(offset.left+size)+"px;top:"+(offset.top+size)+"px;";
+			console.log(style);
+			for(var i in style){
+				if(i>0){
+					initData.picShowHolder.append('<div class="newDiv" style="'+style[0]+style[i]+'"></div>');
+				}
+			}
+			hoverElm.remove();
+			$(".newDiv").each(function(){
+				offset=$(this).position();
+				var color=getColor(theContext.getImageData(offset.left,offset.top,$(this).height(),$(this).height()).data);
+				setColor($(this),color);	
+			});
+		}
+	};
+	
+    $(document).ready(function(){
+		
+		var picShow=new PicShow({
+			picHolder:"picHolder",
+			imgSrc:"a.jpg",
+			picShowHolder:$("#picShowHolder"),
+			callBack:function(){
+				console.log("all ready");
+			}
+		});
+		picShow.init();
+    });
+    </script>
+</body>
+</html>
